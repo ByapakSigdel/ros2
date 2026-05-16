@@ -60,7 +60,9 @@ export GAZEBO_RESOURCE_PATH=$GAZEBO_RESOURCE_PATH:/ws/src/aws-robomaker-small-ho
 EOF
 
 COPY docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+# Strip CR in case the host cloned with Windows (CRLF) line endings —
+# otherwise the shebang becomes 'bash\r' and the container exits 127.
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["bash"]
