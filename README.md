@@ -14,6 +14,52 @@ The world is the open-source **AWS RoboMaker Small House**: a furnished apartmen
 
 ---
 
+## 0. Quick start with Docker (recommended for sharing)
+
+If `install.sh` fails on someone else's machine, use Docker — it pins Ubuntu,
+ROS, Gazebo, every apt package, **and clones the AWS world** (which is
+`.gitignore`d, so a plain `git clone` of this repo is missing it — the #1 reason
+a teammate's setup breaks).
+
+**Requirements:** Windows 11 + WSL2 with Docker (Docker Desktop WSL integration,
+or Docker Engine inside the WSL distro). WSLg provides the GUI automatically — no
+X server to install.
+
+Run everything **from inside your WSL2 distro** (not PowerShell):
+
+```bash
+cd ~/ros2_apartment_sim
+docker compose build          # first time only, ~15-25 min
+docker compose up             # Gazebo + RViz windows open on your desktop
+```
+
+Drive the robot from a second WSL terminal:
+
+```bash
+docker compose exec sim bash
+ros2 run teleop_twist_keyboard teleop_twist_keyboard
+```
+
+Other launch args — edit the `command:` line in `docker-compose.yml`, or run ad hoc:
+
+```bash
+docker compose run --rm sim ros2 launch apartment_sim apartment.launch.py model:=full
+```
+
+Rosbags written to `/ws/bags` inside the container appear in `./bags/` on the host.
+
+**Troubleshooting**
+- *No windows appear* — confirm `echo $DISPLAY` is non-empty in your WSL shell;
+  run `wsl --update` in PowerShell to get current WSLg.
+- *Gazebo runs very slowly* — it's using software rendering. If `ls /dev/dri`
+  shows devices, uncomment the `devices:` block in `docker-compose.yml` for GPU
+  acceleration.
+- *Image build is huge* — expected (~6-8 GB); it's a full ROS desktop + Gazebo.
+
+The native `install.sh` path below still works and is fine for your own machine.
+
+---
+
 ## 1. Clone and install (one-time, ~10–20 min)
 
 On a fresh Ubuntu 22.04:

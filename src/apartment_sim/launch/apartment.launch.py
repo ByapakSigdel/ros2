@@ -54,7 +54,11 @@ def _make_nodes(context, *args, **kwargs):
                             '-entity', 'multi_sensor_bot',
                             '-x', LaunchConfiguration('x_pose'),
                             '-y', LaunchConfiguration('y_pose'),
-                            '-z', '0.05'],
+                            '-z', '0.05',
+                            # WSL loads the heavy AWS small-house world slowly;
+                            # the default 30s timeout expires before /spawn_entity
+                            # is registered, so the robot never spawns.
+                            '-timeout', '180.0'],
                  output='screen')
     rviz = Node(package='rviz2', executable='rviz2', name='rviz2',
                 arguments=['-d', rviz_config],

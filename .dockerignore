@@ -1,0 +1,15 @@
+# Keep the build context small — these are host artifacts, never go in the image.
+build/
+install/
+log/
+.git/
+.gitignore
+# Re-cloned fresh inside the image:
+src/aws-robomaker-small-house-world/
+# Data / junk
+bags/
+*.db3
+__pycache__/
+*.pyc
+.vscode/
+.idea/

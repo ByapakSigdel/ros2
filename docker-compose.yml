@@ -1,0 +1,29 @@
+# Run the apartment sim in a container with GUI on Windows 11 + WSL2 (WSLg).
+#   docker compose build        # first time, ~15-25 min
+#   docker compose up           # Gazebo + RViz windows appear on the desktop
+#   docker compose exec sim bash    # second terminal, e.g. for teleop
+services:
+  sim:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: apartment_sim:humble
+    container_name: apartment_sim
+    network_mode: host          # simplest path for ROS 2 DDS discovery
+    stdin_open: true
+    tty: true
+    environment:
+      # WSLg exposes the X/Wayland server inside the WSL distro:
+      - DISPLAY=${DISPLAY:-:0}
+      - WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-wayland-0}
+      - XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/mnt/wslg/runtime-dir}
+      - PULSE_SERVER=${PULSE_SERVER:-/mnt/wslg/PulseServer}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - /mnt/wslg:/mnt/wslg:rw
+      - ./bags:/ws/bags:rw       # rosbags recorded to /ws/bags persist on the host
+    # Optional GPU acceleration (WSLg D3D12). Uncomment only if `ls /dev/dri`
+    # shows devices in your WSL distro — otherwise compose fails to start.
+    # devices:
+    #   - /dev/dri:/dev/dri
+    command: ros2 launch apartment_sim apartment.launch.py
