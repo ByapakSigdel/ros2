@@ -1,0 +1,5 @@
+# Keeps this otherwise-empty directory tracked by git.
+# Git does not track empty directories; without this file `config/` vanishes
+# from clones and Docker build contexts, and CMakeLists.txt's
+# install(DIRECTORY ... config ...) fails with "can't find .../config".
+# Add params here (e.g. Nav2 / SLAM yaml) for the upcoming navigation work.

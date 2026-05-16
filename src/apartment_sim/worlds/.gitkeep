@@ -1,0 +1,5 @@
+# Keeps this otherwise-empty directory tracked by git.
+# Git does not track empty directories; without this file `worlds/` vanishes
+# from clones and Docker build contexts, and CMakeLists.txt's
+# install(DIRECTORY ... worlds ...) fails with "can't find .../worlds".
+# Add custom .world files here.
