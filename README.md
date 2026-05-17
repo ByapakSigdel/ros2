@@ -16,24 +16,37 @@ The world is the open-source **AWS RoboMaker Small House**: a furnished apartmen
 
 ## 0. Quick start with Docker (recommended for sharing)
 
-If `install.sh` fails on someone else's machine, use Docker — it pins Ubuntu,
-ROS, Gazebo, every apt package, **and clones the AWS world** (which is
-`.gitignore`d, so a plain `git clone` of this repo is missing it — the #1 reason
-a teammate's setup breaks).
+Docker pins Ubuntu, ROS, Gazebo, every apt package, **and clones the AWS world**
+(which is `.gitignore`d — a plain `git clone` of this repo is missing it, the #1
+reason a teammate's setup breaks).
 
-**Requirements:** Windows 11 + WSL2 with Docker (Docker Desktop WSL integration,
-or Docker Engine inside the WSL distro). WSLg provides the GUI automatically — no
-X server to install.
+The GUI uses **WSLg**: Gazebo and RViz windows open on your desktop, rendered on
+the **host GPU** via WSL2 GPU passthrough — fast enough for camera data
+collection. No X server to install.
 
-Run everything **from inside your WSL2 distro** (not PowerShell):
+**Requirements:** Windows 11 + WSL2 with Docker (Docker Desktop with WSL
+integration enabled, or Docker Engine inside the distro). Native Linux works
+too. macOS is not supported in this mode (no GPU passthrough).
+
+> **Launch from a WSL2 / Linux terminal — NOT Windows PowerShell.** WSLg's
+> display and GPU devices only exist inside the WSL distro; from PowerShell the
+> container has no `$DISPLAY` and no `/dev/dri`.
 
 ```bash
-cd ~/ros2_apartment_sim
-docker compose build          # first time only, ~15-25 min
-docker compose up             # Gazebo + RViz windows open on your desktop
+cd ~/ros2_apartment_sim          # use a clone on the WSL filesystem, not /mnt/c
+docker compose up --build        # first time: build (~15-25 min) + run
 ```
 
-Drive the robot from a second WSL terminal:
+Gazebo and RViz windows appear on your desktop once the house world finishes
+loading. On startup the container prints the active GPU, e.g.:
+
+```
+[entrypoint] DISPLAY=:0  GPU renderer: D3D12 (NVIDIA GeForce ...)
+```
+
+If that says `llvmpipe`, GPU passthrough is not active — see troubleshooting.
+
+Drive the robot from a second terminal:
 
 ```bash
 docker compose exec sim bash
@@ -43,17 +56,20 @@ ros2 run teleop_twist_keyboard teleop_twist_keyboard
 Other launch args — edit the `command:` line in `docker-compose.yml`, or run ad hoc:
 
 ```bash
-docker compose run --rm sim ros2 launch apartment_sim apartment.launch.py model:=full
+docker compose run --rm sim \
+  ros2 launch apartment_sim apartment.launch.py model:=full
 ```
 
 Rosbags written to `/ws/bags` inside the container appear in `./bags/` on the host.
 
 **Troubleshooting**
-- *No windows appear* — confirm `echo $DISPLAY` is non-empty in your WSL shell;
-  run `wsl --update` in PowerShell to get current WSLg.
-- *Gazebo runs very slowly* — it's using software rendering. If `ls /dev/dri`
-  shows devices, uncomment the `devices:` block in `docker-compose.yml` for GPU
-  acceleration.
+- *`$DISPLAY is empty` / no windows* — you launched from PowerShell. Use a WSL2
+  terminal. Run `wsl --update` (in PowerShell) to ensure WSLg is current.
+- *Renderer shows `llvmpipe`* — GPU not passed through. Check `ls /dev/dri` in
+  your WSL distro shows devices, and `ls /usr/lib/wsl/lib` is non-empty. Update
+  your GPU's Windows driver (it must support WSL2 / WDDM 3.0+).
+- *`/dev/dri` missing → compose error* — your WSL2 lacks GPU support; update
+  Windows + GPU driver, or remove the `devices:` block to fall back to software.
 - *Image build is huge* — expected (~6-8 GB); it's a full ROS desktop + Gazebo.
 
 The native `install.sh` path below still works and is fine for your own machine.

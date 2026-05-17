@@ -1,7 +1,10 @@
-# Run the apartment sim in a container with GUI on Windows 11 + WSL2 (WSLg).
-#   docker compose build        # first time, ~15-25 min
-#   docker compose up           # Gazebo + RViz windows appear on the desktop
-#   docker compose exec sim bash    # second terminal, e.g. for teleop
+# Run the apartment sim in Docker with GPU-accelerated GUI via WSLg.
+#
+# Launch from a WSL2 (Windows 11) or native-Linux TERMINAL — not PowerShell:
+#   docker compose up --build        # build (first time) + run
+#   docker compose exec sim bash     # second terminal, e.g. for teleop
+#
+# Gazebo/RViz windows appear on your desktop, rendered on the host GPU.
 services:
   sim:
     build:
@@ -12,18 +15,18 @@ services:
     network_mode: host          # simplest path for ROS 2 DDS discovery
     stdin_open: true
     tty: true
+    shm_size: "2gb"             # Gazebo + RViz + DDS shared memory
     environment:
-      # WSLg exposes the X/Wayland server inside the WSL distro:
+      # WSLg exposes the host X/Wayland server inside the WSL distro:
       - DISPLAY=${DISPLAY:-:0}
       - WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-wayland-0}
       - XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/mnt/wslg/runtime-dir}
       - PULSE_SERVER=${PULSE_SERVER:-/mnt/wslg/PulseServer}
+    devices:
+      - /dev/dri:/dev/dri        # host GPU render/card nodes (WSL2 D3D12 / Linux DRI)
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - /mnt/wslg:/mnt/wslg:rw
-      - ./bags:/ws/bags:rw       # rosbags recorded to /ws/bags persist on the host
-    # Optional GPU acceleration (WSLg D3D12). Uncomment only if `ls /dev/dri`
-    # shows devices in your WSL distro — otherwise compose fails to start.
-    # devices:
-    #   - /dev/dri:/dev/dri
+      - /usr/lib/wsl:/usr/lib/wsl:ro   # WSL2 GPU user-mode driver libraries
+      - ./bags:/ws/bags:rw             # rosbags recorded to /ws/bags persist on the host
     command: ros2 launch apartment_sim apartment.launch.py
